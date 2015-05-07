@@ -82,7 +82,7 @@ def max_or_zero(*args, **kwargs):
     else:
         return max(*args, **kwargs)
     
-def bitfield(arrays,dtype):
+def bitfield(arrays, dtype):
     """converts a list of arrays of ones and zeros into a single
     array of unsigned ints of the given datatype."""
     n = {uint8:8,uint16:16,uint32:32}
