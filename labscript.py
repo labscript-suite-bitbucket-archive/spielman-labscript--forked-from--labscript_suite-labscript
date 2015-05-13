@@ -1163,6 +1163,7 @@ class Output(Device):
                     # We evaluate the functions at the midpoints of the
                     # timesteps in order to remove the zero-order hold
                     # error introduced by sampling an analog signal:
+                    # IBS: This assimes uniformly spaced times.
                     try:
                         midpoints = time + 0.5*(time[1] - time[0])
                     except IndexError:
