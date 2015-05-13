@@ -548,7 +548,7 @@ class Pseudoclock(Device):
             # Also add the stop time as as change time. First check that it isn't too close to the time of the last instruction:
             dt = self.parent_device.stop_time - change_time_list[-1]
             if abs(dt) < 1.0/clock_line.clock_limit:
-                raise LabscriptError('The stop time of the experiment is t= %s s, but the last instruction for a device attached to %s is at t= %s s. '%( str(self.stop_time), self.name, str(change_time_list[-1])) +
+                raise LabscriptError('The stop time of the experiment is t= %s s, but the last instruction for a device attached to %s is at t= %s s. '%( str(self.parent_device.stop_time), self.name, str(change_time_list[-1])) +
                                      'One or more connected devices cannot support update delays shorter than %s sec. Please set the stop_time a bit later.'%str(1.0/clock_line.clock_limit))
 
             change_time_list.append(self.parent_device.stop_time)
