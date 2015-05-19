@@ -1756,12 +1756,18 @@ def save_labscripts(hdf5_file):
     Save current labscript, but only if we are compiling from a file rather
     than from the imbeded script
     """
-    if not compiler.from_file:
+    if compiler.from_file:
         if compiler.labscript_file is not None:
-            script_text = open(compiler.labscript_file).read()
+            compiler.script_text = open(compiler.labscript_file).read()
         else:
-            script_text = ''
-        script = hdf5_file.create_dataset('script',data=script_text)
+            compiler.script_text = ''
+       
+        try:
+            del hdf5_file['script']
+        except:
+            pass
+            
+        script = hdf5_file.create_dataset('script',data=compiler.script_text)
         script.attrs['name'] = os.path.basename(compiler.labscript_file).encode() if compiler.labscript_file is not None else ''
         script.attrs['path'] = os.path.dirname(compiler.labscript_file).encode() if compiler.labscript_file is not None else sys.path[0]
         try:
@@ -1970,13 +1976,14 @@ def labscript_h5_init(hdf5_filename):
     """
     if not os.path.exists(hdf5_filename):
         raise LabscriptError('Provided hdf5 filename %s doesn\'t exist.'%hdf5_filename)
+    else: 
+        load_globals(hdf5_filename)
     
     try:
-        load_globals(hdf5_filename)
         with h5py.File(hdf5_filename, "r") as hdf5_file:
             compiler.script_text = hdf5_file['script'].value
     
-        compiler.from_file=True
+        compiler.from_file=False
         compiler.hdf5_filename = hdf5_filename
     except:
         raise LabscriptError('Unable to read script from file')
@@ -2025,6 +2032,8 @@ def labscript_cleanup():
 class compiler:
     # The labscript file being compiled:
     labscript_file = None
+    script_text = ''
+    from_file=True
     # All defined devices:
     inventory = []
     # The filepath of the h5 file containing globals and which will
