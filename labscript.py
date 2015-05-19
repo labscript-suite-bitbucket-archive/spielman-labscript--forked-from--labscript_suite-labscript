@@ -1752,35 +1752,40 @@ def generate_connection_table(hdf5_file):
   
   
 def save_labscripts(hdf5_file):
-    if compiler.labscript_file is not None:
-        script_text = open(compiler.labscript_file).read()
-    else:
-        script_text = ''
-    script = hdf5_file.create_dataset('script',data=script_text)
-    script.attrs['name'] = os.path.basename(compiler.labscript_file).encode() if compiler.labscript_file is not None else ''
-    script.attrs['path'] = os.path.dirname(compiler.labscript_file).encode() if compiler.labscript_file is not None else sys.path[0]
-    try:
-        import labscriptlib
-        prefix = os.path.dirname(labscriptlib.__file__)
-        for module in sys.modules.values():
-            if hasattr(module,'__file__'):
-                path = os.path.abspath(module.__file__)
-                if path.startswith(prefix) and (path.endswith('.pyc') or path.endswith('.py')):
-                    path = path.replace('.pyc','.py')
-                    save_path = 'labscriptlib/' + path.replace(prefix,'').replace('\\','/')
-                    if save_path in hdf5_file:
-                        # Don't try to save the same module script twice! 
-                        # (seems to at least double count __init__.py when you import an entire module as in from labscriptlib.stages import * where stages is a folder with an __init__.py file.
-                        # Doesn't seem to want to double count files if you just import the contents of a file within a module
-                        continue
-                    hdf5_file.create_dataset(save_path, data=open(path).read())
-                    process = subprocess.Popen(['svn', 'info', path], stdout=subprocess.PIPE,stderr=subprocess.PIPE,startupinfo=startupinfo)
-                    info, err = process.communicate()
-                    hdf5_file[save_path].attrs['svn info'] = info + '\n' + err
-    except ImportError:
-        pass
-    except WindowsError if os.name == 'nt' else None:
-        sys.stderr.write('Warning: Cannot save SVN data for imported scripts. Check that the svn command can be run from the command line\n')
+    """
+    Save current labscript, but only if we are compiling from a file rather
+    than from the imbeded script
+    """
+    if not compiler.from_file:
+        if compiler.labscript_file is not None:
+            script_text = open(compiler.labscript_file).read()
+        else:
+            script_text = ''
+        script = hdf5_file.create_dataset('script',data=script_text)
+        script.attrs['name'] = os.path.basename(compiler.labscript_file).encode() if compiler.labscript_file is not None else ''
+        script.attrs['path'] = os.path.dirname(compiler.labscript_file).encode() if compiler.labscript_file is not None else sys.path[0]
+        try:
+            import labscriptlib
+            prefix = os.path.dirname(labscriptlib.__file__)
+            for module in sys.modules.values():
+                if hasattr(module,'__file__'):
+                    path = os.path.abspath(module.__file__)
+                    if path.startswith(prefix) and (path.endswith('.pyc') or path.endswith('.py')):
+                        path = path.replace('.pyc','.py')
+                        save_path = 'labscriptlib/' + path.replace(prefix,'').replace('\\','/')
+                        if save_path in hdf5_file:
+                            # Don't try to save the same module script twice! 
+                            # (seems to at least double count __init__.py when you import an entire module as in from labscriptlib.stages import * where stages is a folder with an __init__.py file.
+                            # Doesn't seem to want to double count files if you just import the contents of a file within a module
+                            continue
+                        hdf5_file.create_dataset(save_path, data=open(path).read())
+                        process = subprocess.Popen(['svn', 'info', path], stdout=subprocess.PIPE,stderr=subprocess.PIPE,startupinfo=startupinfo)
+                        info, err = process.communicate()
+                        hdf5_file[save_path].attrs['svn info'] = info + '\n' + err
+        except ImportError:
+            pass
+        except WindowsError if os.name == 'nt' else None:
+            sys.stderr.write('Warning: Cannot save SVN data for imported scripts. Check that the svn command can be run from the command line\n')
 
 
 def write_device_properties(hdf5_file):
@@ -1958,6 +1963,25 @@ def load_globals(hdf5_filename):
                 params[name] = None
             _builtins_dict[name] = params[name]
             
+
+def labscript_h5_init(hdf5_filename):
+    """
+    Init labscript based on the text within the existing h5 file
+    """
+    if not os.path.exists(hdf5_filename):
+        raise LabscriptError('Provided hdf5 filename %s doesn\'t exist.'%hdf5_filename)
+    
+    try:
+        load_globals(hdf5_filename)
+        with h5py.File(hdf5_filename, "r") as hdf5_file:
+            compiler.script_text = hdf5_file['script'].value
+    
+        compiler.from_file=True
+        compiler.hdf5_filename = hdf5_filename
+    except:
+        raise LabscriptError('Unable to read script from file')
+        
+    return compiler.script_text
             
 def labscript_init(hdf5_filename, labscript_file=None, new=False, overwrite=False):
     if new:
@@ -1975,6 +1999,7 @@ def labscript_init(hdf5_filename, labscript_file=None, new=False, overwrite=Fals
         import __main__
         labscript_file = __main__.__file__
     compiler.labscript_file = os.path.abspath(labscript_file)
+    compiler.from_file=True
 
 def labscript_cleanup():
     """restores builtins and the labscript module to its state before
@@ -1987,6 +2012,8 @@ def labscript_cleanup():
     compiler.inventory = []
     compiler.hdf5_filename = None
     compiler.labscript_file = None
+    compiler.script_text = ''
+    compiler.from_file=True
     compiler.start_called = False
     compiler.wait_table = {}
     compiler.wait_monitor = None
