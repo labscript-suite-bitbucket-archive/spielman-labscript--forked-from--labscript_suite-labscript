@@ -2029,25 +2029,56 @@ def labscript_cleanup():
     compiler.trigger_duration = 0
     compiler.wait_delay = 0
 
-def compile(self,labscript_file, run_file):
+def compile(labscript_file, run_file):
     """
     Compiles a given labscript file
     """
     # The namespace the labscript will run in:
     sandbox = {'__name__':'__main__'}
     try:
-        # TODO: remove actual compilation of labscript from here and
-        # move to when file is ready to go at blacs.  This code should do
-        #
-        # labscript.labscript_init(run_file, labscript_file=labscript_file)
-        # with h5py.File(run_file) as h5_file:
-        #    labscript.save_labscripts(h5_file)
-        # 
-        # instead of the following code
-        # 
         labscript_init(run_file, labscript_file=labscript_file)
         
         execfile(labscript_file,sandbox,sandbox)
+        return True
+    except:
+        traceback_lines = traceback.format_exception(*sys.exc_info())
+        del traceback_lines[1:2]
+        message = ''.join(traceback_lines)
+        sys.stderr.write(message)
+        return False
+    finally:
+        labscript_cleanup()
+
+def compile(labscript_file, run_file):
+    """
+    Compiles a given labscript file
+    """
+    # The namespace the labscript will run in:
+    sandbox = {'__name__':'__main__'}
+    try:
+        labscript_init(run_file, labscript_file=labscript_file)
+        
+        execfile(labscript_file,sandbox,sandbox)
+        return True
+    except:
+        traceback_lines = traceback.format_exception(*sys.exc_info())
+        del traceback_lines[1:2]
+        message = ''.join(traceback_lines)
+        sys.stderr.write(message)
+        return False
+    finally:
+        labscript_cleanup()
+
+def compile_h5(run_file):
+    """
+    Compiles a given labscript file using the script in the file
+    """
+    # The namespace the labscript will run in:
+    sandbox = {'__name__':'__main__'}
+    try:
+        script_text = labscript_h5_init(run_file)
+        
+        exec(script_text,sandbox,sandbox)
         return True
     except:
         traceback_lines = traceback.format_exception(*sys.exc_info())
