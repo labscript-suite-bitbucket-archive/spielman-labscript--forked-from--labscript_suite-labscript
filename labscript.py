@@ -16,12 +16,15 @@ import os
 import sys
 import subprocess
 import keyword
+import traceback
 from inspect import getargspec
 from functools import wraps
 
 import runmanager
 import labscript_utils.h5_lock, h5py
 import labscript_utils.properties
+import labscript_utils.h5_scripting
+
 from pylab import *
 
 import functions
@@ -1828,6 +1831,11 @@ def generate_wait_table(hdf5_file):
     dataset.attrs['wait_monitor_acquisition_connection'] = acquisition_connection
     dataset.attrs['wait_monitor_timeout_device'] = timeout_device
     dataset.attrs['wait_monitor_timeout_connection'] = timeout_connection
+
+def generate_postprocess_table(hdf5_file):
+    for [func, args, kwargs] in compiler.post_process_table:
+        labscript_utils.h5_scripting.attach_function(func, hdf5_file, args=args, kwargs=kwargs)
+
     
 def generate_code():
     if compiler.hdf5_filename is None:
@@ -1854,6 +1862,7 @@ def generate_code():
         generate_connection_table(hdf5_file)
         write_device_properties(hdf5_file)
         generate_wait_table(hdf5_file)
+        generate_postprocess_table(hdf5_file)
         save_labscripts(hdf5_file)
 
 def trigger_all_pseudoclocks(t='initial'):
@@ -1939,6 +1948,14 @@ def stop(t):
             device.stop_time = t
     generate_code()
 
+def postprocess(func, *args, **kwargs):
+    """
+    Add a function that will be applied as a postprocessing step, but run during
+    the actual execution of the script
+    """
+    
+    compiler.post_process_table += [[func, args, kwargs],]
+
 def load_globals(hdf5_filename):
     params = runmanager.get_shot_globals(hdf5_filename)
     with h5py.File(hdf5_filename,'r') as hdf5_file:
@@ -2023,31 +2040,12 @@ def labscript_cleanup():
     compiler.from_file=True
     compiler.start_called = False
     compiler.wait_table = {}
+    compiler.post_process_table = []
     compiler.wait_monitor = None
     compiler.master_pseudoclock = None
     compiler.all_pseudoclocks = None
     compiler.trigger_duration = 0
     compiler.wait_delay = 0
-
-def compile(labscript_file, run_file):
-    """
-    Compiles a given labscript file
-    """
-    # The namespace the labscript will run in:
-    sandbox = {'__name__':'__main__'}
-    try:
-        labscript_init(run_file, labscript_file=labscript_file)
-        
-        execfile(labscript_file,sandbox,sandbox)
-        return True
-    except:
-        traceback_lines = traceback.format_exception(*sys.exc_info())
-        del traceback_lines[1:2]
-        message = ''.join(traceback_lines)
-        sys.stderr.write(message)
-        return False
-    finally:
-        labscript_cleanup()
 
 def compile(labscript_file, run_file):
     """
@@ -2102,6 +2100,7 @@ class compiler:
     hdf5_filename = None
     start_called = False
     wait_table = {}
+    post_process_table = []
     wait_monitor = None
     master_pseudoclock = None
     all_pseudoclocks = None
