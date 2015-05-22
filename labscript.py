@@ -1853,6 +1853,7 @@ def ready_file(hdf5_file):
             
     hdf5_file.create_group('devices')
     hdf5_file.create_group('calibrations')
+    hdf5_file.create_group('post_process')
     
     
 def generate_code():
