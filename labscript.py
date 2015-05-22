@@ -2025,28 +2025,6 @@ def labscript_init(hdf5_filename, labscript_file=None, new=False, overwrite=Fals
     compiler.labscript_file = os.path.abspath(labscript_file)
     compiler.from_file=True
 
-def labscript_cleanup():
-    """restores builtins and the labscript module to its state before
-    labscript_init() was called"""
-    for name in _builtins_dict.copy():
-        if name not in _existing_builtins_dict:
-            del _builtins_dict[name]
-        else:
-            _builtins_dict[name] = _existing_builtins_dict[name]
-    compiler.inventory = []
-    compiler.hdf5_filename = None
-    compiler.labscript_file = None
-    compiler.script_text = ''
-    compiler.from_file=True
-    compiler.start_called = False
-    compiler.wait_table = {}
-    compiler.post_process_table = []
-    compiler.wait_monitor = None
-    compiler.master_pseudoclock = None
-    compiler.all_pseudoclocks = None
-    compiler.trigger_duration = 0
-    compiler.wait_delay = 0
-
 def compile(labscript_file, run_file):
     """
     Compiles a given labscript file
@@ -2086,6 +2064,29 @@ def compile_h5(run_file):
         return False
     finally:
         labscript_cleanup()
+
+
+def labscript_cleanup():
+    """restores builtins and the labscript module to its state before
+    labscript_init() was called"""
+    for name in _builtins_dict.copy():
+        if name not in _existing_builtins_dict:
+            del _builtins_dict[name]
+        else:
+            _builtins_dict[name] = _existing_builtins_dict[name]
+    compiler.inventory = []
+    compiler.hdf5_filename = None
+    compiler.labscript_file = None
+    compiler.script_text = ''
+    compiler.from_file=True
+    compiler.start_called = False
+    compiler.wait_table = {}
+    compiler.post_process_table = []
+    compiler.wait_monitor = None
+    compiler.master_pseudoclock = None
+    compiler.all_pseudoclocks = None
+    compiler.trigger_duration = 0
+    compiler.wait_delay = 0
 
 
 class compiler:
