@@ -1866,6 +1866,8 @@ def generate_code():
         
         ready_file(hdf5_file)
 
+        h5file.attrs['min_time'] = compiler.min_time
+
         for device in compiler.inventory:
             if device.parent_device is None:
                 device.generate_code(hdf5_file)
@@ -1949,7 +1951,20 @@ def start():
         max_delay = 0
     return max_delay
     
-def stop(t):
+def stop(t, min_time=0):
+    """
+    End of sequence
+    
+    min_time defines the shortest time that can ellapse before the next
+    sequence starts.  This is useful if you want a strict rep-rate for experiments
+    this is software timed, so expect ~ms level precision.
+    """
+    
+    if min_time < t:
+        compiler.min_time = t
+    else:
+        compiler.min_time = min_time
+    
     # Indicate the end of an experiment and initiate compilation:
     if t == 0:
         raise LabscriptError('Stop time cannot be t=0. Please make your run a finite duration')
@@ -2107,6 +2122,7 @@ def labscript_cleanup():
     compiler.all_pseudoclocks = None
     compiler.trigger_duration = 0
     compiler.wait_delay = 0
+    compiler.min_time = 0
 
 
 class compiler:
@@ -2127,4 +2143,5 @@ class compiler:
     all_pseudoclocks = None
     trigger_duration = 0
     wait_delay = 0
+    min_time = 0
 
