@@ -1866,7 +1866,7 @@ def generate_code():
         
         ready_file(hdf5_file)
 
-        h5file.attrs['min_time'] = compiler.min_time
+        hdf5_file.attrs['min_time'] = compiler.min_time
 
         for device in compiler.inventory:
             if device.parent_device is None:
