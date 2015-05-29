@@ -790,14 +790,17 @@ class Pseudoclock(Device):
         
 
 class TriggerableDevice(Device):
-    trigger_edge_type = 'rising'
     # A class devices should inherit if they do
     # not require a pseudoclock, but do require a trigger.
     # This enables them to have a Trigger divice as a parent
     
-    @set_passed_properties(property_names = {})
-    def __init__(self, name, parent_device, connection, parentless=False, **kwargs):
-
+    @set_passed_properties(
+        property_names = {
+             "device_properties": ["trigger_edge_type"]
+                 }
+        )
+    def __init__(self, name, parent_device, connection, parentless=False, trigger_edge_type='rising', **kwargs):
+        self.trigger_edge_type = trigger_edge_type
         if None in [parent_device, connection] and not parentless:
             raise LabscriptError('No parent specified. If this device does not require a parent, set parentless=True')
         if isinstance(parent_device, Trigger):
