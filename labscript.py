@@ -821,7 +821,7 @@ class TriggerableDevice(Device):
 class PseudoclockDevice(TriggerableDevice):
     description = 'Generic Pseudoclock Device'
     allowed_children = [Pseudoclock]
-    trigger_edge_type = 'rising'
+
     # How long after a trigger the next instruction is actually output:
     trigger_delay = 0
     # How long a trigger line must remain high/low in order to be detected:
