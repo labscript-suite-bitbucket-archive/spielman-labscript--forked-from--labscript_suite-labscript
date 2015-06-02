@@ -549,13 +549,15 @@ class Pseudoclock(Device):
                 change_time_list.append(0)
 
             # Also add the stop time as as change time. First check that it isn't too close to the time of the last instruction:
-            if not self.parent_device.stop_time in change_time_list:
-                dt = self.parent_device.stop_time - change_time_list[-1]
-                if abs(dt) < 1.0/clock_line.clock_limit:
-                    raise LabscriptError('The stop time of the experiment is t= %s s, but the last instruction for a device attached to %s is at t= %s s. '%( str(self.parent_device.stop_time), self.name, str(change_time_list[-1])) +
-                                         'One or more connected devices cannot support update delays shorter than %s sec. Please set the stop_time a bit later.'%str(1.0/clock_line.clock_limit))
-                
-                change_time_list.append(self.parent_device.stop_time)
+            # TODO: rolled back a change here that was intended to confirm that 
+            # the past point was not on the stop line.
+            # if not self.parent_device.stop_time in change_time_list:
+            dt = self.parent_device.stop_time - change_time_list[-1]
+            if abs(dt) < 1.0/clock_line.clock_limit:
+                raise LabscriptError('The stop time of the experiment is t= %s s, but the last instruction for a device attached to %s is at t= %s s. '%( str(self.parent_device.stop_time), self.name, str(change_time_list[-1])) +
+                                     'One or more connected devices cannot support update delays shorter than %s sec. Please set the stop_time a bit later.'%str(1.0/clock_line.clock_limit))
+            
+            change_time_list.append(self.parent_device.stop_time)
 
             # Sort change times so self.stop_time will be in the middle
             # somewhere if it is prior to the last actual instruction. Whilst
