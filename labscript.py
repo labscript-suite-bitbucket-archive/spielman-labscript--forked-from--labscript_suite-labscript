@@ -1079,6 +1079,9 @@ class Output(Device):
                            'the earliest output possible after this trigger is at t=%s'%str(trigger_time + self.trigger_delay))
                     raise LabscriptError(err)
                 # Check that there are no instructions too soon before the trigger:
+                
+                # BUG: currently this is a stupid check because trigger_time - t < 0, so it is always true.  Did we
+                # want t - trigger_time?
                 if 0 < trigger_time - t < max(1.0/self.clock_limit, compiler.wait_delay):
                     err = (' %s %s has an instruction at t = %s. ' % (self.description, self.name, str(t)) + 
                            'This is too soon before a trigger at t=%s, '%str(trigger_time) + 
