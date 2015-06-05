@@ -1079,10 +1079,10 @@ class Output(Device):
                            'the earliest output possible after this trigger is at t=%s'%str(trigger_time + self.trigger_delay))
                     raise LabscriptError(err)
                 # Check that there are no instructions too soon before the trigger:
-                if 0 < trigger_time - t < max(self.clock_limit, compiler.wait_delay):
+                if 0 < trigger_time - t < max(1.0/self.clock_limit, compiler.wait_delay):
                     err = (' %s %s has an instruction at t = %s. ' % (self.description, self.name, str(t)) + 
                            'This is too soon before a trigger at t=%s, '%str(trigger_time) + 
-                           'the latest output possible before this trigger is at t=%s'%str(trigger_time - max(self.clock_limit, compiler.wait_delay)))
+                           'the latest output possible before this trigger is at t=%s'%str(trigger_time - max(1.0/self.clock_limit, compiler.wait_delay)))
                            
     def offset_instructions_from_trigger(self, trigger_times):
         """Subtracts self.trigger_delay from all instructions at or after each trigger_time"""
