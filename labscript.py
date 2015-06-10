@@ -1444,8 +1444,18 @@ class AnalogIn(Device):
         self.scale_factor = scale_factor
         self.units=units
         Device.__init__(self,name,parent_device,connection, **kwargs)
+
+    def _acquisition_index(self, label):
+        for index, acquisition in enumerate(self.acquisitions):
+            if acquisition.get('label', '') == label:
+                return index
+        return -1
    
     def acquire(self,label,start_time, duration, wait_label='',scale_factor=None,units=None):
+        # Confirm that an acquisition with this name does not already exist
+        if self._acquisition_index(label) >= 0:
+            raise LabscriptError('%s already exists as an acquisition'%label)
+        
         if scale_factor is None:
             scale_factor = self.scale_factor
         if units is None:
@@ -1454,6 +1464,24 @@ class AnalogIn(Device):
                                  'label': label, 'wait_label':wait_label, 'scale_factor':scale_factor,'units':units})
         return duration
      
+    def acquire_start(self, label, start_time, **kwargs):
+        """
+        initiate an acquisition at the specified time
+        """
+        
+        self.acquire(label, start_time, 0.0, **kwargs)
+    
+    def acquire_stop(self, stop_time, label):
+        """
+        stop an acquisition at the specified time
+        """
+        # search the acquisitions list for an item with label
+        index = self._acquisition_index(label)
+        if index == -1
+            raise LabscriptError('%s does not exists an acquisition'%label)
+        
+        self.acquisitions[index]['end_time'] = stop_time
+        
         
 class Shutter(DigitalOut):
     description = 'shutter'
