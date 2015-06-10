@@ -1445,14 +1445,14 @@ class AnalogIn(Device):
         self.units=units
         Device.__init__(self,name,parent_device,connection, **kwargs)
    
-    def acquire(self,label,start_time,end_time,wait_label='',scale_factor=None,units=None):
+    def acquire(self,label,start_time, duration, wait_label='',scale_factor=None,units=None):
         if scale_factor is None:
             scale_factor = self.scale_factor
         if units is None:
             units = self.units
-        self.acquisitions.append({'start_time': start_time, 'end_time': end_time,
+        self.acquisitions.append({'start_time': start_time, 'end_time': start_time+duration,
                                  'label': label, 'wait_label':wait_label, 'scale_factor':scale_factor,'units':units})
-        return end_time - start_time
+        return duration
      
         
 class Shutter(DigitalOut):
