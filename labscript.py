@@ -1292,6 +1292,36 @@ class AnalogQuantity(Output):
         self.add_instruction(t, {'function': custom_ramp_func, 'description':'custom ramp: %s' % function.__name__,
                                  'initial time':t, 'end time': t + duration, 'clock rate': samplerate, 'units': units})   
         return duration
+
+    def customramp_start(self, start_time, function, *args, **kwargs):
+        """
+        initiate an acquisition at the specified time
+        """
+                
+        # Make and return a class that when called closes out the proposed
+        # customramp this class can be called only once!
+        class stop(object):            
+            def __init__(self, parent, start_time, *args, **kwargs):
+                self.__parent__ = parent
+                self.__start_time__ = start_time
+                self.__args__ = args
+                self.__kwargs__ = kwargs
+                
+            def __call__(self, stop_time):
+                if self.__parent__:
+                    duration = stop_time - self.__start_time__
+                    result = self.__parent__.customramp(self.__start_time__, 
+                                                     duration,
+                                                     *self.__args__,
+                                                     **self.__kwargs__)
+                    self.__parent__ = None
+                else:
+                    raise LabscriptError('ramp already ended.')
+                    result = 0.0
+                return result
+
+        return stop(self, label, start_time, **kwargs)
+
         
     def constant(self,t,value,units=None):
         # verify that value can be converted to float
@@ -1476,7 +1506,7 @@ class AnalogIn(Device):
         """
                 
         # Make and return a class that when called closes out the proposed
-        # acquisition  this class can be called only once!
+        # acquisition this class can be called only once!
         class stop(object):            
             def __init__(self, parent, label, start_time, **kwargs):
                 self.__parent__ = parent
@@ -1486,16 +1516,16 @@ class AnalogIn(Device):
                 
             def __call__(self, stop_time):
                 if self.__parent__:
+                    duration = stop_time - self.__start_time__
                     result = self.__parent__.acquire(self.__label__, 
                                                      self.__start_time__, 
-                                                     stop_time, 
+                                                     duration, 
                                                      **self.__kwargs__)
                     self.__parent__ = None
                 else:
                     raise LabscriptError('acquisition %s already ended.' % label)
                     result = 0.0
                 return result
-
 
         return stop(self, label, start_time, **kwargs)
         
