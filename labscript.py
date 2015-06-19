@@ -17,6 +17,7 @@ import sys
 import subprocess
 import keyword
 import traceback
+import importlib
 from inspect import getargspec
 from functools import wraps
 
@@ -24,6 +25,7 @@ import runmanager
 import labscript_utils.h5_lock, h5py
 import labscript_utils.properties
 import labscript_utils.h5_scripting
+import labscript_utils.convenience
 
 from pylab import *
 
@@ -204,13 +206,8 @@ class Device(object):
         if name in keyword.kwlist:
             raise LabscriptError('%s is a reserved Python keyword.'%name +
                                  ' Please choose a different device name.')
-                                     
-        try:
-            # Test that name is a valid Python variable name:
-            exec '%s = None'%name
-            assert '.' not in name
-        except:
-            raise ValueError('%s is not a valid Python variable name.'%name)
+        
+        labscript_utils.convenience.ValidName(name, RaiseError=True)
         
         # Put self into the global namespace:
         _builtins_dict[name] = self
@@ -2178,6 +2175,21 @@ def compile_h5(run_file):
         return False
     finally:
         labscript_cleanup()
+
+def labscript_import(modulename):
+    """
+    Behaves like 'import modulename' would, excepts forces the imported 
+    script to be rerun
+    """
+    # see if the proposed module is already loaded
+    # if so, we will need to re-run the code contained in it
+    if modulename in sys.modules.keys():
+        reload(sys.modules[modulename])
+        return sys.modules[modulename]
+    
+    module = importlib.import_module(modulename)
+    
+    return module
 
 
 def labscript_cleanup():
