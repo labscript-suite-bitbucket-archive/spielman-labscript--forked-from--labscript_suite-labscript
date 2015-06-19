@@ -1297,7 +1297,7 @@ class AnalogQuantity(Output):
                 
         # Make and return a class that when called closes out the proposed
         # customramp this class can be called only once!
-        class stop(object):            
+        class ramp_ref(object):            
             def __init__(self, parent, start_time, *args, **kwargs):
                 self.__parent__ = parent
                 self.__start_time__ = start_time
@@ -1305,6 +1305,9 @@ class AnalogQuantity(Output):
                 self.__kwargs__ = kwargs
                 
             def __call__(self, stop_time):
+                return self.stop(stop_time)
+
+            def stop(self, stop_time):
                 if self.__parent__:
                     duration = stop_time - self.__start_time__
                     result = self.__parent__.customramp(self.__start_time__, 
@@ -1316,14 +1319,17 @@ class AnalogQuantity(Output):
                     raise LabscriptError('ramp already ended.')
                     result = 0.0
                 return result
-
-        return stop(self, label, start_time, **kwargs)
+            
+        return ramp_ref(self, label, start_time, **kwargs)
 
         
     def constant(self,t,value,units=None):
         # verify that value can be converted to float
-        val = float(value)
-        self.add_instruction(t,value,units)
+        try:
+            val = float(value)
+        except:
+            raise LabscriptError('in constant, value cannot be converted to float')
+        self.add_instruction(t, value, units)
         
       
 class AnalogOut(AnalogQuantity):
@@ -1504,7 +1510,7 @@ class AnalogIn(Device):
                 
         # Make and return a class that when called closes out the proposed
         # acquisition this class can be called only once!
-        class stop(object):            
+        class acquire_ref(object):            
             def __init__(self, parent, label, start_time, **kwargs):
                 self.__parent__ = parent
                 self.__label__ = label
@@ -1512,6 +1518,9 @@ class AnalogIn(Device):
                 self.__kwargs__ = kwargs
                 
             def __call__(self, stop_time):
+                return self.stop(stop_time)
+                
+            def stop(self, stop_time):
                 if self.__parent__:
                     duration = stop_time - self.__start_time__
                     result = self.__parent__.acquire(self.__label__, 
@@ -1524,7 +1533,7 @@ class AnalogIn(Device):
                     result = 0.0
                 return result
 
-        return stop(self, label, start_time, **kwargs)
+        return acquire_ref(self, label, start_time, **kwargs)
         
 class Shutter(DigitalOut):
     description = 'shutter'
