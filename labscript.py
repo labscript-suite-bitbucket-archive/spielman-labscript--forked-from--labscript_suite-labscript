@@ -869,6 +869,11 @@ class PseudoclockDevice(TriggerableDevice):
         if self.is_master_pseudoclock:
             if compiler.wait_monitor is not None:
                 # Make the wait monitor pulse to signify starting or resumption of the experiment:
+                if hasattr(compiler.wait_monitor.parent_device, 'DAQmx_waits_counter_bug_workaround'):
+                    # Hacky workaround for a bug in DAQmx that
+                    # prevents shorter pulse widths being detected by a counter:
+                    if compiler.wait_monitor.parent_device.DAQmx_waits_counter_bug_workaround:
+                        duration = 0.1
                 compiler.wait_monitor.trigger(t, duration)
             elif t != self.initial_trigger_time:
                 raise LabscriptError("You cannot use waits in unless you have a wait monitor." +
